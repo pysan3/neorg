@@ -1,2 +1,6 @@
 wiki/
 test.norg
+/luarocks
+/lua
+/lua_modules
+/.luarocks

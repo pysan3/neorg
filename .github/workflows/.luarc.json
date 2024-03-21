@@ -6,7 +6,8 @@
     "lua/?/init.lua"
   ],
   "Lua.workspace.library": [
-    "/home/runner/work/neorg/neorg/deps/neodev.nvim/types/stable"
+    "/home/runner/work/neorg/neorg/deps/neodev.nvim/types/stable",
+    "/home/runner/work/neorg/neorg/lua_modules/share/lua/5.1"
   ],
   "Lua.diagnostics.libraryFiles": "Disable",
   "Lua.workspace.checkThirdParty": "Disable"
