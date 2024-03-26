@@ -28,4 +28,4 @@ jobs:
           dependencies: |
             nvim-nio
             lua-utils.nvim
-            pathlib.nvim >= 1.1.1
+            pathlib.nvim >= 2.0.0
