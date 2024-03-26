@@ -52,6 +52,7 @@ module.private = {
     --- Get a list of all norg files in current workspace. Returns { workspace_path, norg_files }
     --- @return table?
     get_norg_files = function()
+        ---@type core.dirman
         local dirman = neorg.modules.get_module("core.dirman")
         if not dirman then
             return nil
@@ -89,6 +90,7 @@ module.private = {
     --- @param file string file path, norg syntax accepted
     --- @return table<string>
     get_lines = function(file)
+        ---@type core.dirman.utils
         local dirutils = neorg.modules.get_module("core.dirman.utils")
         if not dirutils then
             return {}
@@ -168,6 +170,7 @@ module.private = {
 
     generate_file_links = function(context, _prev, _saved, _match)
         local res = {}
+        ---@type core.dirman
         local dirman = neorg.modules.get_module("core.dirman")
         if not dirman then
             return {}

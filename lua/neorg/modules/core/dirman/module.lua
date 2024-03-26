@@ -105,6 +105,7 @@ module.load = function()
     end
 end
 
+---@class core.dirman.config.public
 module.config.public = {
     -- The list of active Neorg workspaces.
     --
@@ -130,6 +131,7 @@ module.config.public = {
     use_popup = true,
 }
 
+---@class core.dirman.private
 module.private = {
     current_workspace = { "default", vim.fn.getcwd() },
 }
@@ -139,6 +141,7 @@ module.public = {
     get_workspaces = function()
         return module.config.public.workspaces
     end,
+    ---@return string[]
     get_workspace_names = function()
         return vim.tbl_keys(module.config.public.workspaces)
     end,
