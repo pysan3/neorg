@@ -3,3 +3,4 @@ test.norg
 /luarocks
 /lua_modules
 /.luarocks
+__types.lua

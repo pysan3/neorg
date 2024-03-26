@@ -79,7 +79,7 @@ module.public = {
     end,
 
     --- Applies a set of options to a buffer
-    ---@param buf number the buffer number to apply the options to
+    ---@param buf integer the buffer number to apply the options to
     ---@param option_list table a table of option = value pairs
     apply_buffer_options = function(buf, option_list)
         for option_name, value in pairs(option_list or {}) do
@@ -90,8 +90,8 @@ module.public = {
     ---Creates a new horizontal split at the bottom of the screen
     ---@param  name string the name of the buffer contained within the split (will have neorg:// prepended to it)
     ---@param  config table? a table of <option> = <value> keypairs signifying buffer-local options for the buffer contained within the split
-    ---@param  height number? the height of the new split
-    ---@return number?, number? #Both the buffer ID and window ID
+    ---@param  height integer? the height of the new split
+    ---@return integer?, integer? #Both the buffer ID and window ID
     create_split = function(name, config, height)
         vim.validate({
             name = { name, "string" },
@@ -153,7 +153,7 @@ module.public = {
     ---@param name string the name of the buffer
     ---@param config table a table of <option> = <value> keypairs signifying buffer-local options for the buffer contained within the split
     ---@param left boolean if true will spawn the vertical split on the left (default is right)
-    ---@return number?, number? #The buffer of the vertical split
+    ---@return integer?, integer? #The buffer of the vertical split
     create_vsplit = function(name, config, left)
         vim.validate({
             name = { name, "string" },
@@ -298,6 +298,7 @@ module.public = {
     ---@param opts table|nil
     ---   - opts.keybinds (boolean)             if false, will not use the default keybinds
     ---   - opts.del_on_autocommands (table)    delete buffer on specified autocommands
+    ---@return integer? buffer
     create_norg_buffer = function(name, split_type, config, opts)
         vim.validate({
             name = { name, "string" },
@@ -335,7 +336,8 @@ module.public = {
             elseif split_type == "split" then
                 return module.public.create_split(name, {})
             else
-                local buf = vim.api.nvim_create_buf(true, true)
+                ---@type integer
+                local buf = vim.api.nvim_create_buf(true, true) ---@diagnostic disable-line
                 vim.api.nvim_buf_set_name(buf, name)
                 return buf
             end

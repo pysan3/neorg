@@ -458,6 +458,9 @@ module.on_event = function(event)
         -- FIXME(vhyrro): This creates a listed buffer which makes things very ugly.
         -- Also make sure to disable folds in this view.
         local buf = neorg.modules.get_module("core.ui").create_norg_buffer("module_list", "nosplit")
+        if not buf then
+            return
+        end
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
         vim.keymap.set("n", "q", vim.cmd.quit, { buffer = buf, silent = true, nowait = true })
 

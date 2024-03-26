@@ -52,7 +52,7 @@ dirman.create_file("my_file", "my_ws", {
 local Path = require("pathlib")
 
 local neorg = require("neorg.core")
-local config, log, modules, utils = neorg.config, neorg.log, neorg.modules, neorg.utils
+local log, modules, utils = neorg.log, neorg.modules, neorg.utils
 
 local module = modules.create("core.dirman")
 

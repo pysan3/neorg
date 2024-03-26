@@ -81,6 +81,7 @@ module.private = {
     },
 }
 
+---@class core.esupports.promo
 module.public = {
     get_promotable_node_prefix = function(node)
         for _, data in pairs(module.private.types) do
