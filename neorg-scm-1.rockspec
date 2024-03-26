@@ -12,11 +12,11 @@ description = {
 
 dependencies = {
 	"lua >= 5.1, < 5.4",
-    "nvim-nio",
-    -- "norgopolis-client.lua >= 0.2.0",
-    -- "norgopolis-server.lua >= 1.3.1",
-    "lua-utils.nvim",
-    "pathlib.nvim >= 2.0.0",
+	"nvim-nio",
+	-- "norgopolis-client.lua >= 0.2.0",
+	-- "norgopolis-server.lua >= 1.3.1",
+	"lua-utils.nvim",
+	"pathlib.nvim >= 2.0.0",
 }
 
 source = {
@@ -30,10 +30,10 @@ if MODREV == "scm" then
 end
 
 build = {
-   type = "builtin",
-   copy_directories = {
-       "queries",
-       "ftdetect",
-       "doc",
-   }
+	type = "builtin",
+	copy_directories = {
+		"queries",
+		"ftdetect",
+		"doc",
+	},
 }

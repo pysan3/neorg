@@ -94,7 +94,7 @@ The recommended installation method is via [rocks.nvim](https://github.com/nvim-
 
 ### `lazy.nvim`
 
-In order to install Neorg via `lazy.nvim`, you must take a few extra steps - this is because `luarocks` is a critical compontent for Neorg to function.
+In order to install Neorg via `lazy.nvim`, you must take a few extra steps - this is because `luarocks` is a critical component for Neorg to function.
 See [this blog](https://vhyrro.github.io/posts/neorg-and-luarocks/) for more information.
 
 > [!IMPORTANT]
@@ -111,10 +111,8 @@ See [this blog](https://vhyrro.github.io/posts/neorg-and-luarocks/) for more inf
   ```lua
   {
       "vhyrro/luarocks.nvim",
-      version = "*",
-      config = function()
-          require("luarocks").setup({})
-      end,
+      priority = 1000,
+      config = true,
   }
   ```
 - Add the following to your plugin list:
@@ -140,8 +138,13 @@ It is not recommended to use packer as it is now unmaintained.
 <summary>Click for installation snippet.</summary>
 
 ```lua
-use_rocks {
-    "neorg",
+use {
+  "nvim-neorg/neorg",
+  rocks = { "lua-utils.nvim", "nvim-nio", "nui.nvim", "plenary.nvim" },
+  tag = "*", -- Pin Neorg to the latest stable release
+  config = function()
+      require("neorg").setup()
+  end,
 }
 ```
 
@@ -183,6 +186,6 @@ Immense thank you to all of the sponsors of my work!
 
 <div align="center">
 
-<!-- sponsors --><a href="https://github.com/vsedov"><img src="https://github.com/vsedov.png" width="60px" alt="vsedov" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/bR3iN"><img src="https://github.com/bR3iN.png" width="60px" alt="bR3iN" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/skbolton"><img src="https://github.com/skbolton.png" width="60px" alt="skbolton" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/molleweide"><img src="https://github.com/molleweide.png" width="60px" alt="molleweide" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/theherk"><img src="https://github.com/theherk.png" width="60px" alt="theherk" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/purepani"><img src="https://github.com/purepani.png" width="60px" alt="purepani" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/refaelsh"><img src="https://github.com/refaelsh.png" width="60px" alt="refaelsh" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/tromars"><img src="https://github.com/tromars.png" width="60px" alt="tromars" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/zettlrobert"><img src="https://github.com/zettlrobert.png" width="60px" alt="zettlrobert" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/jgregoire"><img src="https://github.com/jgregoire.png" width="60px" alt="jgregoire" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/bottd"><img src="https://github.com/bottd.png" width="60px" alt="bottd" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/coltbo"><img src="https://github.com/coltbo.png" width="60px" alt="coltbo" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/DingDean"><img src="https://github.com/DingDean.png" width="60px" alt="DingDean" /></a>&nbsp;&nbsp;&nbsp;<!-- sponsors -->
+<!-- sponsors --><a href="https://github.com/vsedov"><img src="https://github.com/vsedov.png" width="60px" alt="vsedov" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/skbolton"><img src="https://github.com/skbolton.png" width="60px" alt="skbolton" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/molleweide"><img src="https://github.com/molleweide.png" width="60px" alt="molleweide" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/danymat"><img src="https://github.com/danymat.png" width="60px" alt="danymat" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/theherk"><img src="https://github.com/theherk.png" width="60px" alt="theherk" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/purepani"><img src="https://github.com/purepani.png" width="60px" alt="purepani" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/refaelsh"><img src="https://github.com/refaelsh.png" width="60px" alt="refaelsh" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/tromars"><img src="https://github.com/tromars.png" width="60px" alt="tromars" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/jgregoire"><img src="https://github.com/jgregoire.png" width="60px" alt="jgregoire" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/bottd"><img src="https://github.com/bottd.png" width="60px" alt="bottd" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/DingDean"><img src="https://github.com/DingDean.png" width="60px" alt="DingDean" /></a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/Ladas552"><img src="https://github.com/Ladas552.png" width="60px" alt="Ladas552" /></a>&nbsp;&nbsp;&nbsp;<!-- sponsors -->
 
 </div>

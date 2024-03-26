@@ -20,7 +20,7 @@ function neorg.setup(cfg)
     cfg = cfg or {
         load = {
             ["core.defaults"] = {},
-        }
+        },
     }
 
     if not (pcall(require, "lua-utils")) then
@@ -73,6 +73,8 @@ function neorg.setup_after_build()
     if not user_configuration then
         return
     end
+
+    package.loaded["lua-utils"] = nil
 
     -- HACK(vhyrro): Please do this elsewhere.
     local ok, lua_utils = pcall(require, "lua-utils")

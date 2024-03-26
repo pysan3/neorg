@@ -479,13 +479,11 @@ module.public = {
 
                 for _, extmark in ipairs(icon_extmarks) do
                     local extmark_details = extmark[4]
-                    local extmark_column = extmark[3] + (line_length - vim.api.nvim_strwidth(line))
 
                     for _, virt_text in ipairs(extmark_details.virt_text or {}) do
-                        line = line:sub(1, extmark_column)
+                        line = vim.fn.strcharpart(line, 0, extmark[3])
                             .. virt_text[1]
-                            .. line:sub(extmark_column + vim.api.nvim_strwidth(virt_text[1]) + 1)
-                        line_length = vim.api.nvim_strwidth(line) - line_length + vim.api.nvim_strwidth(virt_text[1])
+                            .. vim.fn.strcharpart(line, extmark[3] + vim.api.nvim_strwidth(virt_text[1]))
                     end
                 end
 
@@ -638,7 +636,7 @@ module.public = {
             end
 
             local line_lengths = {}
-            local max_len = 0
+            local max_len = config.min_width or 0
             for row_0b = row_start_0b, row_end_0bin do
                 local len = get_line_length(bufid, row_0b)
                 if len > max_len then
@@ -928,6 +926,10 @@ module.config.public = {
             -- When set to `content`, will only span as far as the longest line
             -- within the code block.
             width = "fullwidth",
+
+            -- When set to a number, the code block background will be at least
+            -- this many chars wide. Useful in conjunction with `width = "content"`
+            min_width = nil,
 
             -- Additional padding to apply to either the left or the right. Making
             -- these values negative is considered undefined behaviour (it is
@@ -1332,7 +1334,8 @@ local function handle_init_event(event)
         local wo = vim.wo[event.window]
         wo.foldmethod = "expr"
         wo.foldexpr = vim.treesitter.foldexpr and "v:lua.vim.treesitter.foldexpr()" or "nvim_treesitter#foldexpr()"
-        wo.foldtext = "v:lua.require'neorg'.modules.get_module('core.concealer').foldtext()"
+        wo.foldtext = utils.is_minimum_version(0, 10, 0) and ""
+            or "v:lua.require'neorg'.modules.get_module('core.concealer').foldtext()"
 
         local init_open_folds = module.config.public.init_open_folds
         local function open_folds()
