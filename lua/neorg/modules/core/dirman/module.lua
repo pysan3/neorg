@@ -49,6 +49,8 @@ dirman.create_file("my_file", "my_ws", {
 ```
 --]]
 
+local Path = require("pathlib")
+
 local neorg = require("neorg.core")
 local config, log, modules, utils = neorg.config, neorg.log, neorg.modules, neorg.utils
 
@@ -64,7 +66,7 @@ end
 module.load = function()
     -- Go through every workspace and expand special symbols like ~
     for name, workspace_location in pairs(module.config.public.workspaces) do
-        module.config.public.workspaces[name] = vim.fn.expand(workspace_location) ---@diagnostic disable-line -- TODO: type error workaround <pysan3>
+        module.config.public.workspaces[name] = Path(workspace_location):resolve():to_absolute()
     end
 
     modules.await("core.keybinds", function(keybinds)
@@ -111,8 +113,9 @@ module.config.public = {
     --
     -- There is always an inbuilt workspace called `default`, whose location is
     -- set to the Neovim current working directory on boot.
+    ---@type table<string, PathlibPath>
     workspaces = {
-        default = vim.fn.getcwd(),
+        default = Path.cwd(),
     },
     -- The name for the index file.
     --
@@ -133,7 +136,8 @@ module.config.public = {
 
 ---@class core.dirman.private
 module.private = {
-    current_workspace = { "default", vim.fn.getcwd() },
+    ---@type { [1]: string, [2]: PathlibPath }
+    current_workspace = { "default", Path.cwd() },
 }
 
 ---@class core.dirman
@@ -170,7 +174,7 @@ module.public = {
         end
 
         -- Create the workspace directory if not already present
-        vim.fn.mkdir(workspace, "p")
+        workspace:mkdir(workspace.const.o755, true)
 
         -- Cache the current workspace
         local current_ws = vim.deepcopy(module.private.current_workspace)
@@ -198,13 +202,14 @@ module.public = {
     --- Dynamically defines a new workspace if the name isn't already occupied and broadcasts the workspace_added event
     ---@return boolean True if the workspace is added successfully, false otherwise
     ---@param workspace_name string #The unique name of the new workspace
-    ---@param workspace_path string #A full path to the workspace root
+    ---@param workspace_path string|PathlibPath #A full path to the workspace root
     add_workspace = function(workspace_name, workspace_path)
         -- If the module already exists then bail
         if module.config.public.workspaces[workspace_name] then
             return false
         end
 
+        workspace_path = Path(workspace_path):resolve():absolute()
         -- Set the new workspace and its path accordingly
         module.config.public.workspaces[workspace_name] = workspace_path
         -- Broadcast the workspace_added event with the newly added workspace as the content
@@ -222,38 +227,22 @@ module.public = {
     --- If the file we opened is within a workspace directory, returns the name of the workspace, else returns nil
     get_workspace_match = function()
         -- Cache the current working directory
-        module.config.public.workspaces.default = vim.fn.getcwd()
+        module.config.public.workspaces.default = Path.cwd()
 
-        -- Grab the working directory of the current open file
-        local realcwd = vim.fn.expand("%:p:h")
-
-        -- Store the length of the last match
-        local last_length = 0
-
-        -- The final result
-        local result = ""
+        local file = Path(vim.fn.expand("%:p"))
+        local ws_name = "default"
+        local longest_match = 0
 
         -- Find a matching workspace
         for workspace, location in pairs(module.config.public.workspaces) do
             if workspace ~= "default" then
-                -- Expand all special symbols like ~ etc. and escape special characters
-                local expanded = string.gsub(vim.fn.expand(location), "%p", "%%%1") ---@diagnostic disable-line -- TODO: type error workaround <pysan3>
-
-                -- If the workspace location is a parent directory of our current realcwd
-                -- or if the ws location is the same then set it as the real workspace
-                -- We check this last_length here because if a match is longer
-                -- than the previous one then we can say it is a much more precise
-                -- match and hence should be prioritized
-                if realcwd:find(expanded) and #expanded > last_length then ---@diagnostic disable-line -- TODO: type error workaround <pysan3>
-                    -- Set the result to the workspace name
-                    result = workspace
-                    -- Set the last_length variable to the new length
-                    last_length = #expanded
+                if file:is_relative_to(location) and location:len() > longest_match then
+                    ws_name = workspace
+                    longest_match = location:len()
                 end
             end
         end
-
-        return result:len() ~= 0 and result or "default"
+        return ws_name
     end,
     --- Uses the `get_workspace_match()` function to determine the root of the workspace based on the
     --- current working directory, then changes into that workspace
@@ -292,7 +281,7 @@ module.public = {
     ---@field metadata? core.esupports.metagen.metadata metadata fields, if provided inserts metadata - an empty table uses default values
 
     --- Takes in a path (can include directories) and creates a .norg file from that path
-    ---@param path string a path to place the .norg file in
+    ---@param path string|PathlibPath a path to place the .norg file in
     ---@param workspace? string workspace name
     ---@param opts? core.dirman.create_file_opts additional options
     create_file = function(path, workspace, opts)
@@ -312,46 +301,26 @@ module.public = {
             return
         end
 
-        -- Split the path at every /
-        local split = vim.split(vim.trim(path), config.pathsep, true) ---@diagnostic disable-line -- TODO: type error workaround <pysan3>
+        local destination = (fullpath / path):with_suffix(".norg")
+        -- generate parent dirs just in case
+        destination:parent_assert():mkdir(Path.const.o755 + 4 * math.pow(8, 4), true) -- 40755(oct)
+        -- touch file
+        destination:touch(Path.permission("rw-rw-rw-"), false)
 
-        -- If the last element is empty (i.e. if the string provided ends with '/') then trim it
-        if split[#split]:len() == 0 then
-            split = vim.list_slice(split, 0, #split - 1)
-        end
-
-        -- Go through each directory (excluding the actual file name) and create each directory individually
-        for _, element in ipairs(vim.list_slice(split, 0, #split - 1)) do
-            vim.loop.fs_mkdir(fullpath .. config.pathsep .. element, 16877)
-            fullpath = fullpath .. config.pathsep .. element
-        end
-
-        -- If the provided filepath ends in .norg then don't append the filetype automatically
-        local fname = fullpath .. config.pathsep .. split[#split]
-        if not vim.endswith(path, ".norg") then
-            fname = fname .. ".norg"
-        end
-
-        -- Create the file
-        local fd = vim.loop.fs_open(fname, opts.force and "w" or "a", 438)
-        if fd then
-            vim.loop.fs_close(fd)
-        end
-
-        local bufnr = module.public.get_file_bufnr(fname)
+        local bufnr = module.public.get_file_bufnr(destination:tostring())
         modules.broadcast_event(
             assert(modules.create_event(module, "core.dirman.events.file_created", { buffer = bufnr, opts = opts }))
         )
 
         if not opts.no_open then
             -- Begin editing that newly created file
-            vim.cmd("e " .. fname .. "| w")
+            vim.cmd("e " .. destination:cmd_string() .. "| w")
         end
     end,
 
     --- Takes in a workspace name and a path for a file and opens it
     ---@param workspace_name string #The name of the workspace to use
-    ---@param path string #A path to open the file (e.g directory/filename.norg)
+    ---@param path string|PathlibPath #A path to open the file (e.g directory/filename.norg)
     open_file = function(workspace_name, path)
         local workspace = module.public.get_workspace(workspace_name)
 
@@ -359,7 +328,7 @@ module.public = {
             return
         end
 
-        vim.cmd("e " .. workspace .. config.pathsep .. path .. " | w")
+        vim.cmd("e " .. (workspace / path):cmd_string() .. " | w")
     end,
     --- Reads the neorg_last_workspace.txt file and loads the cached workspace from there
     set_last_workspace = function()
@@ -385,50 +354,40 @@ module.public = {
 
         -- If we were successful in switching to that workspace then begin editing that workspace's index file
         if module.public.set_workspace(last_workspace) then
-            vim.cmd("e " .. workspace_path .. config.pathsep .. module.config.public.index)
+            vim.cmd("e " .. (workspace_path / module.public.get_index()):cmd_string())
 
             utils.notify("Last Workspace -> " .. workspace_path)
         end
     end,
     --- Checks for file existence by supplying a full path in `filepath`
-    ---@param filepath string
+    ---@param filepath string|PathlibPath
     file_exists = function(filepath)
-        local f = io.open(filepath, "r")
-
-        if f ~= nil then
-            f:close()
-            return true
-        else
-            return false
-        end
+        return Path(filepath):exists()
     end,
     --- Get the bufnr for a `filepath` (full path)
-    ---@param filepath string
+    ---@param filepath string|PathlibPath
     get_file_bufnr = function(filepath)
         if module.public.file_exists(filepath) then
-            local uri = vim.uri_from_fname(filepath)
+            local uri = vim.uri_from_fname(tostring(filepath))
             return vim.uri_to_bufnr(uri)
         end
     end,
     --- Returns a list of all files relative path from a `workspace_name`
     ---@param workspace_name string
-    ---@return table?
+    ---@return PathlibPath[]|nil
     get_norg_files = function(workspace_name)
-        local res = {}
         local workspace = module.public.get_workspace(workspace_name)
 
         if not workspace then
             return
         end
 
-        local scanned_dir = vim.fs.dir(workspace, { depth = 20 })
-
-        for name, type in scanned_dir do
-            if type == "file" and vim.endswith(name, ".norg") then
-                table.insert(res, workspace .. config.pathsep .. name)
+        local res = {}
+        for path in workspace:fs_iterdir(true, 20) do
+            if path:is_file(true) and path:suffix() == ".norg" then
+                table.insert(res, path)
             end
         end
-
         return res
     end,
     --- Sets the current workspace and opens that workspace's index file
@@ -448,16 +407,15 @@ module.public = {
 
         -- If we're switching to a workspace that isn't the default workspace then enter the index file
         if workspace ~= "default" then
-            vim.cmd("e " .. ws_match .. config.pathsep .. module.config.public.index)
+            vim.cmd.edit((ws_match / module.public.get_index()):cmd_string())
         end
     end,
     --- Touches a file in workspace
-    --- TODO: make the touch file recursive
-    ---@param path string
+    ---@param path string|PathlibPath
     ---@param workspace string
     touch_file = function(path, workspace)
         vim.validate({
-            path = { path, "string" },
+            path = { path, "string", "table" },
             workspace = { workspace, "string" },
         })
 
@@ -467,15 +425,7 @@ module.public = {
             return false
         end
 
-        local file = io.open(ws_match .. config.pathsep .. path, "w")
-
-        if not file then
-            return false
-        end
-
-        file:write("")
-        file:close()
-        return true
+        return (ws_match / path):touch(Path.const.o644, true)
     end,
     get_index = function()
         return module.config.public.index
@@ -512,10 +462,9 @@ module.on_event = function(event)
     -- If somebody has executed the :Neorg index command then
     if event.type == "core.neorgcmd.events.dirman.index" then
         local current_ws = module.public.get_current_workspace()
+        local index_path = current_ws[2] / module.public.get_index()
 
-        local index_path = table.concat({ current_ws[2], "/", module.config.public.index })
-
-        if vim.fn.filereadable(index_path) == 0 then
+        if vim.fn.filereadable(index_path:tostring("/")) == 0 then
             if current_ws[1] == "default" then
                 utils.notify(table.concat({
                     "Index file cannot be created in 'default' workspace to avoid confusion.",
@@ -523,11 +472,11 @@ module.on_event = function(event)
                 }, " "))
                 return
             end
-            if not module.public.touch_file(module.config.public.index, module.public.get_current_workspace()[1]) then
+            if not index_path:touch(Path.const.o644, true) then
                 utils.notify(
                     table.concat({
                         "Unable to create '",
-                        module.config.public.index,
+                        module.public.get_index(),
                         "' in the current workspace - are your filesystem permissions set correctly?",
                     }),
                     vim.log.levels.WARN
@@ -536,7 +485,7 @@ module.on_event = function(event)
             end
         end
 
-        vim.cmd.edit(index_path)
+        vim.cmd.edit(index_path:cmd_string())
         return
     end
 
